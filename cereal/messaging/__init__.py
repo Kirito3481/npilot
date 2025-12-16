@@ -2,7 +2,7 @@
 from msgq.ipc_pyx import Context, Poller, SubSocket, PubSocket, SocketEventHandle, toggle_fake_events, \
                                 set_fake_prefix, get_fake_prefix, delete_fake_prefix, wait_for_one_event
 from msgq.ipc_pyx import MultiplePublishersError, IpcError
-from msgq import fake_event_handle, pub_sock, sub_sock, drain_sock_raw
+from msgq import fake_event_handle, sub_sock, drain_sock_raw
 import msgq
 
 import os
@@ -14,6 +14,14 @@ from typing import Optional, List, Union, Dict
 from cereal import log
 from cereal.services import SERVICE_LIST
 from openpilot.common.util import MovingAverage
+
+BIG_QUEUE_SIZE = 1024 * 1024    # 1MB
+SMALL_QUEUE_SIZE = 500 * 1024   # 500KB
+
+def pub_sock(endpoint: str) -> PubSocket:
+  service = SERVICE_LIST.get(endpoint)
+  size = BIG_QUEUE_SIZE if service and service.big_queue else SMALL_QUEUE_SIZE
+  return msgq.pub_sock(endpoint, size)
 
 NO_TRAVERSAL_LIMIT = 2**64-1
 

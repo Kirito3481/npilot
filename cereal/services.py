@@ -109,13 +109,14 @@ def build_header():
   h += "#include <map>\n"
   h += "#include <string>\n"
 
-  h += "struct service { std::string name; bool should_log; float frequency; int decimation; };\n"
+  h += "struct service { std::string name; bool should_log; float frequency; int decimation; bool big_queue; };\n"
   h += "static std::map<std::string, service> services = {\n"
   for k, v in SERVICE_LIST.items():
     should_log = "true" if v.should_log else "false"
     decimation = -1 if v.decimation is None else v.decimation
-    h += '  { "%s", {"%s", %s, %f, %d}},\n' % \
-         (k, k, should_log, v.frequency, decimation)
+    big_queue = "true" if v.big_queue else "false"
+    h += '  { "%s", {"%s", %s, %f, %d, %s}},\n' % \
+         (k, k, should_log, v.frequency, decimation, big_queue)
   h += "};\n"
 
   h += "#endif\n"
