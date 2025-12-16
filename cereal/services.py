@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
+from enum import IntEnum
 from typing import Optional
 
 
+class QueueSize(IntEnum):
+  BIG = 10 * 1024 * 1024      # 10MB - video frames, large AI outputs
+  MEDIUM = 2 * 1024 * 1024    # 2MB - high freq (CAN), livestream
+  SMALL = 250 * 1024          # 250KB - most services
+
+
 class Service:
-  def __init__(self, should_log: bool, frequency: float, decimation: Optional[int] = None):
+  def __init__(self, should_log: bool, frequency: float, decimation: Optional[int] = None,
+               queue_size: QueueSize = QueueSize.SMALL):
     self.should_log = should_log
     self.frequency = frequency
     self.decimation = decimation
+    self.queue_size = queue_size
 
 
 _services: dict[str, tuple] = {
@@ -20,7 +29,7 @@ _services: dict[str, tuple] = {
   "gpsNMEA": (True, 9.),
   "deviceState": (True, 2., 1),
   "touch": (True, 20., 1),
-  "can": (True, 100., 2053),  # decimation gives ~3 msgs in a full segment
+  "can": (True, 100., 2053, QueueSize.MEDIUM),  # decimation gives ~3 msgs in a full segment
   "controlsState": (True, 100., 10),
   "selfdriveState": (True, 100., 10),
   "pandaStates": (True, 10., 1),
@@ -28,7 +37,7 @@ _services: dict[str, tuple] = {
   "radarState": (True, 20., 5),
   "roadEncodeIdx": (False, 20., 1),
   "liveTracks": (True, 20.),
-  "sendcan": (True, 100., 139),
+  "sendcan": (True, 100., 139, QueueSize.MEDIUM),
   "logMessage": (True, 0.),
   "errorLogMessage": (True, 0., 1),
   "liveCalibration": (True, 4., 4),
@@ -57,12 +66,12 @@ _services: dict[str, tuple] = {
   "roadCameraState": (True, 20., 20),
   "driverCameraState": (True, 20., 20),
   "driverEncodeIdx": (False, 20., 1),
-  "driverStateV2": (True, 20., 10),
+  "driverStateV2": (True, 20., 10, QueueSize.BIG),
   "driverMonitoringState": (True, 20., 10),
   "wideRoadEncodeIdx": (False, 20., 1),
   "wideRoadCameraState": (True, 20., 20),
-  "drivingModelData": (True, 20., 10),
-  "modelV2": (True, 20.),
+  "drivingModelData": (True, 20., 10, QueueSize.BIG),
+  "modelV2": (True, 20., None, QueueSize.BIG),
   "managerState": (True, 2., 1),
   "uploaderState": (True, 0., 1),
   "navInstruction": (True, 1., 10),
@@ -79,16 +88,16 @@ _services: dict[str, tuple] = {
   "uiDebug": (True, 0., 1),
   "testJoystick": (True, 0.),
   "alertDebug": (True, 20., 5),
-  "roadEncodeData": (False, 20.),
-  "driverEncodeData": (False, 20.),
-  "wideRoadEncodeData": (False, 20.),
-  "qRoadEncodeData": (False, 20.),
+  "roadEncodeData": (False, 20., None, QueueSize.BIG),
+  "driverEncodeData": (False, 20., None, QueueSize.BIG),
+  "wideRoadEncodeData": (False, 20., None, QueueSize.BIG),
+  "qRoadEncodeData": (False, 20., None, QueueSize.BIG),
   "livestreamWideRoadEncodeIdx": (False, 20.),
   "livestreamRoadEncodeIdx": (False, 20.),
   "livestreamDriverEncodeIdx": (False, 20.),
-  "livestreamWideRoadEncodeData": (False, 20.),
-  "livestreamRoadEncodeData": (False, 20.),
-  "livestreamDriverEncodeData": (False, 20.),
+  "livestreamWideRoadEncodeData": (False, 20., None, QueueSize.MEDIUM),
+  "livestreamRoadEncodeData": (False, 20., None, QueueSize.MEDIUM),
+  "livestreamDriverEncodeData": (False, 20., None, QueueSize.MEDIUM),
   "customReservedRawData0": (True, 0.),
   "customReservedRawData1": (True, 0.),
   "customReservedRawData2": (True, 0.),
@@ -106,13 +115,13 @@ def build_header():
   h += "#include <map>\n"
   h += "#include <string>\n"
 
-  h += "struct service { std::string name; bool should_log; float frequency; int decimation; };\n"
+  h += "struct service { std::string name; bool should_log; float frequency; int decimation; size_t queue_size; };\n"
   h += "static std::map<std::string, service> services = {\n"
   for k, v in SERVICE_LIST.items():
     should_log = "true" if v.should_log else "false"
     decimation = -1 if v.decimation is None else v.decimation
-    h += '  { "%s", {"%s", %s, %f, %d}},\n' % \
-         (k, k, should_log, v.frequency, decimation)
+    h += '  { "%s", {"%s", %s, %f, %d, %d}},\n' % \
+         (k, k, should_log, v.frequency, decimation, v.queue_size)
   h += "};\n"
 
   h += "#endif\n"
