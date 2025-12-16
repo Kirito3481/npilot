@@ -184,15 +184,10 @@ SubMaster::~SubMaster() {
   }
 }
 
-static constexpr size_t BIG_QUEUE_SIZE = 1024 * 1024;    // 1MB
-static constexpr size_t SMALL_QUEUE_SIZE = 500 * 1024;   // 500KB
-
 PubMaster::PubMaster(const std::vector<const char *> &service_list) {
   for (auto name : service_list) {
     assert(services.count(name) > 0);
-    service serv = services.at(std::string(name));
-    size_t segment_size = serv.big_queue ? BIG_QUEUE_SIZE : SMALL_QUEUE_SIZE;
-    PubSocket *socket = PubSocket::create(message_context.context(), name, true, segment_size);
+    PubSocket *socket = PubSocket::create(message_context.context(), name);
     assert(socket);
     sockets_[name] = socket;
   }
