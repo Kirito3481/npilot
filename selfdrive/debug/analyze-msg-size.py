@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
+import argparse
 from tqdm import tqdm
-from openpilot.tools.lib.logreader import LogReader
+
 from cereal.services import SERVICE_LIST
+from openpilot.tools.lib.logreader import LogReader
 
 
 if __name__ == "__main__":
-  lr = LogReader("98395b7c5b27882e/000000a8--f87e7cd255")
+  parser = argparse.ArgumentParser(description="Analyze message sizes from a log route")
+  parser.add_argument("route", nargs="?", default="98395b7c5b27882e/000000a8--f87e7cd255",
+                      help="Log route to analyze (default: 98395b7c5b27882e/000000a8--f87e7cd255)")
+  args = parser.parse_args()
+
+  lr = LogReader(args.route)
 
   szs = {}
   for msg in tqdm(lr):
@@ -19,7 +26,6 @@ if __name__ == "__main__":
       szs[msg_type]['sum'] += sz
       szs[msg_type]['count'] += 1
 
-  # Print sorted table
   print()
   print(f"{'Service':<36} {'Min (KB)':>12} {'Max (KB)':>12} {'Avg (KB)':>12} {'KB/min':>12} {'KB/sec':>12} {'Minutes in 10MB':>18} {'Seconds in 1MB':>18}")
   print("-" * 132)
@@ -51,6 +57,5 @@ if __name__ == "__main__":
   print()
   print(f"Total usage: {total_kb_per_min / 1024:.2f} MB/min")
 
-  # Calculate total memory usage (all services use 1MB ringbuffer)
-  total_memory_mb = len(SERVICE_LIST) * 1.0
+  total_memory_mb = len(SERVICE_LIST) * 1.0  # new MSGQ ringbuffer size
   print(f"Total ringbuffer memory: {total_memory_mb:.2f} MB ({len(SERVICE_LIST)} services @ 1MB each)")
