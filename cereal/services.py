@@ -3,6 +3,7 @@ from enum import IntEnum
 from typing import Optional
 
 
+# TODO: this should be automatically determined using the capnp schema
 class QueueSize(IntEnum):
   BIG = 10 * 1024 * 1024      # 10MB - video frames, large AI outputs
   MEDIUM = 2 * 1024 * 1024    # 2MB - high freq (CAN), livestream
@@ -66,11 +67,11 @@ _services: dict[str, tuple] = {
   "roadCameraState": (True, 20., 20),
   "driverCameraState": (True, 20., 20),
   "driverEncodeIdx": (False, 20., 1),
-  "driverStateV2": (True, 20., 10, QueueSize.BIG),
+  "driverStateV2": (True, 20., 10, QueueSize.MEDIUM),
   "driverMonitoringState": (True, 20., 10),
   "wideRoadEncodeIdx": (False, 20., 1),
   "wideRoadCameraState": (True, 20., 20),
-  "drivingModelData": (True, 20., 10, QueueSize.BIG),
+  "drivingModelData": (True, 20., 10, QueueSize.MEDIUM),
   "modelV2": (True, 20., None, QueueSize.BIG),
   "managerState": (True, 2., 1),
   "uploaderState": (True, 0., 1),
@@ -83,15 +84,15 @@ _services: dict[str, tuple] = {
   "rawAudioData": (False, 20.),
   "bookmarkButton": (True, 0., 1),
   "audioFeedback": (True, 0., 1),
+  "roadEncodeData": (False, 20., None, QueueSize.BIG),
+  "driverEncodeData": (False, 20., None, QueueSize.BIG),
+  "wideRoadEncodeData": (False, 20., None, QueueSize.BIG),
+  "qRoadEncodeData": (False, 20., None, QueueSize.BIG),
 
   # debug
   "uiDebug": (True, 0., 1),
   "testJoystick": (True, 0.),
   "alertDebug": (True, 20., 5),
-  "roadEncodeData": (False, 20., None, QueueSize.BIG),
-  "driverEncodeData": (False, 20., None, QueueSize.BIG),
-  "wideRoadEncodeData": (False, 20., None, QueueSize.BIG),
-  "qRoadEncodeData": (False, 20., None, QueueSize.BIG),
   "livestreamWideRoadEncodeIdx": (False, 20.),
   "livestreamRoadEncodeIdx": (False, 20.),
   "livestreamDriverEncodeIdx": (False, 20.),

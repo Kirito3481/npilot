@@ -2,7 +2,7 @@
 import argparse
 from tqdm import tqdm
 
-from cereal.services import SERVICE_LIST
+from cereal.services import SERVICE_LIST, QueueSize
 from openpilot.tools.lib.logreader import LogReader
 
 
@@ -57,5 +57,27 @@ if __name__ == "__main__":
   print()
   print(f"Total usage: {total_kb_per_min / 1024:.2f} MB/min")
 
-  total_memory_mb = len(SERVICE_LIST) * 1.0  # new MSGQ ringbuffer size
-  print(f"Total ringbuffer memory: {total_memory_mb:.2f} MB ({len(SERVICE_LIST)} services @ 1MB each)")
+  # Calculate memory usage: old (10MB for all) vs new (from services.py)
+  OLD_SIZE = 10 * 1024 * 1024  # 10MB was the old default
+  old_total = len(SERVICE_LIST) * OLD_SIZE
+
+  new_total = sum(s.queue_size for s in SERVICE_LIST.values())
+
+  # Count by queue size
+  size_counts = {QueueSize.BIG: 0, QueueSize.MEDIUM: 0, QueueSize.SMALL: 0}
+  for s in SERVICE_LIST.values():
+    size_counts[s.queue_size] += 1
+
+  savings_pct = (1 - new_total / old_total) * 100
+
+  print()
+  print(f"{'Queue Size Comparison':<40}")
+  print("-" * 60)
+  print(f"{'Old (10MB default):':<30} {old_total / 1024 / 1024:>10.2f} MB")
+  print(f"{'New (from services.py):':<30} {new_total / 1024 / 1024:>10.2f} MB")
+  print(f"{'Savings:':<30} {savings_pct:>10.1f}%")
+  print()
+  print(f"{'Breakdown:':<30}")
+  print(f"  BIG (10MB):    {size_counts[QueueSize.BIG]:>3} services")
+  print(f"  MEDIUM (2MB):  {size_counts[QueueSize.MEDIUM]:>3} services")
+  print(f"  SMALL (250KB): {size_counts[QueueSize.SMALL]:>3} services")
