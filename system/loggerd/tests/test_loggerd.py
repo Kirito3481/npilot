@@ -108,6 +108,7 @@ class TestLoggerd:
       (VisionStreamType.VISION_STREAM_WIDE_ROAD, frame_spec, "wideRoadCameraState"),
     ]
 
+    sm = messaging.SubMaster(["roadEncodeData"])
     pm = messaging.PubMaster([s for _, _, s in streams] + ["rawAudioData"])
     vipc_server = VisionIpcServer("camerad")
     for stream_type, frame_spec, _ in streams:
@@ -140,6 +141,8 @@ class TestLoggerd:
 
       for _, _, state in streams:
         assert pm.wait_for_readers_to_update(state, timeout=5, dt=0.001)
+
+      sm.update(100)  # wait for encode data publish
 
     managed_processes["loggerd"].stop()
     managed_processes["encoderd"].stop()
